@@ -10,9 +10,16 @@ import {
   Connection,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Signer,
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
+import { getOrCreateAssociatedTokenAccount, createTransferInstruction, createAssociatedTokenAccountInstruction, createAssociatedTokenAccount, getAssociatedTokenAddress, } from "@solana/spl-token";
+import { Keypair, ParsedAccountData, sendAndConfirmTransaction, } from "@solana/web3.js";
+
+const DESTINATION_WALLET = 'HsSgQw9ZSwhyyZTERen2LYdJteRsBH3gnc69Ux69tEUa'; 
+const MINT_ADDRESS = 'SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa'; 
+const TRANSFER_AMOUNT = 10;
 
 export async function GET(request: Request) {
   const response: ActionGetResponse = {
@@ -77,19 +84,56 @@ export const POST = async (request: Request) => {
         }
     }
 
-    const connection = new Connection(clusterApiUrl("devnet"));
+    const connection = new Connection(clusterApiUrl("mainnet-beta"));
+    
+    let senderata = await getAssociatedTokenAddress(
+        new PublicKey(MINT_ADDRESS),
+        account,
+        false
+    )
+    let reciverata = await getAssociatedTokenAddress(
+        new PublicKey(MINT_ADDRESS),
+        new PublicKey(DESTINATION_WALLET),
+        false
+    )
+
+    let senderataacc = connection.getAccountInfo(senderata)
+    let reciverataacc = connection.getAccountInfo(reciverata)
+
+    // let sourceAccount = await 
+
+    // let destinationAccount = await getOrCreateAssociatedTokenAccount(
+    //     connection, 
+    //     account,
+    //     new PublicKey(MINT_ADDRESS),
+    //     new PublicKey(DESTINATION_WALLET)
+    // );
 
     const transaction = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: account,
-        toPubkey: new PublicKey("2n6rwsFfpKs9NZpfEUoYWJ1j1ZzckTqQ1Uqs3kqVPmtd"),
-        lamports: amount * LAMPORTS_PER_SOL,
-      })
+        createAssociatedTokenAccountInstruction(
+            account,
+            new PublicKey(DESTINATION_WALLET),
+            new PublicKey(MINT_ADDRESS),
+            account
+        ),
+        createAssociatedTokenAccountInstruction(
+            account,
+            new PublicKey(account),
+            new PublicKey(MINT_ADDRESS),
+            account
+        ),
+        createTransferInstruction(
+            senderata,
+            reciverata,
+            account,
+            TRANSFER_AMOUNT * Math.pow(10, 6)
+        )
     );
-    transaction.feePayer = account;
+    
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
+    transaction.feePayer = account;
 
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
