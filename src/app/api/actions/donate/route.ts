@@ -8,6 +8,7 @@ import {
 import {
   clusterApiUrl,
   Connection,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   Transaction,
@@ -19,6 +20,33 @@ export async function GET(request: Request) {
     description: "Hello World the world is good",
     title: "Hello World",
     label: "Donate",
+    links: {
+      actions: [
+        {
+          href: "/api/actions/donate?amount=0.1",
+          label: "Donate 0.1 SOL  ",
+        },
+        {
+          href: "/api/actions/donate?amount=1",
+          label: "Donate 1 SOL  ",
+        },
+        {
+          href: "/api/actions/donate?amount=10",
+          label: "Donate 10 SOL  ",
+        },
+        {
+          href: "/api/actions/donate?amount={amount}",
+          label: "Send",
+          parameters: [
+            {
+              name: "amount",
+              required: true,
+              label: "Enter the amount",
+            },
+          ],
+        },
+      ],
+    },
   };
   return Response.json(response, { headers: ACTIONS_CORS_HEADERS });
 }
@@ -27,43 +55,54 @@ export const OPTIONS = GET;
 
 export const POST = async (request: Request) => {
   try {
-    const body : ActionPostRequest = await request.json();
+
+    const url = new URL(request.url);
+    const body: ActionPostRequest = await request.json();
+
     let account: PublicKey;
-    try{
-        account = new PublicKey(body.account);
+    try {
+      account = new PublicKey(body.account);
     } catch (error) {
       throw "Invalid account";
+    }
+
+    let amount : number = 0.1;
+
+    if (url.searchParams.has("amount")) {
+        try {
+          amount = parseFloat(url.searchParams.get("amount") || "0.1");
+          console.log(amount);
+        } catch (error) {
+          throw "Invalid amount";
+        }
     }
 
     const connection = new Connection(clusterApiUrl("devnet"));
 
     const transaction = new Transaction().add(
-        SystemProgram.transfer({
-            fromPubkey: account,
-            toPubkey: new PublicKey("2n6rwsFfpKs9NZpfEUoYWJ1j1ZzckTqQ1Uqs3kqVPmtd"),
-            lamports: 10,
-        })
+      SystemProgram.transfer({
+        fromPubkey: account,
+        toPubkey: new PublicKey("2n6rwsFfpKs9NZpfEUoYWJ1j1ZzckTqQ1Uqs3kqVPmtd"),
+        lamports: amount * LAMPORTS_PER_SOL,
+      })
     );
     transaction.feePayer = account;
-    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
 
-    const payload : ActionPostResponse  = await createPostResponse({
-        fields: {
-            transaction,
-            message: "Hello thans for the donation",
-        },
+    const payload: ActionPostResponse = await createPostResponse({
+      fields: {
+        transaction,
+        message: "Hello thans for the donation",
+      },
     });
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
-
   } catch (error) {
     let message = "an unknown error";
-    if (typeof error == "string" ) {
-        message = error;
+    if (typeof error == "string") {
+      message = error;
     }
-    return Response.json(
-      {  message },
-      { headers: ACTIONS_CORS_HEADERS }
-    );
+    return Response.json({ message }, { headers: ACTIONS_CORS_HEADERS });
   }
-
 };
