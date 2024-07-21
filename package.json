@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@jup-ag/core": "^4.0.0-beta.21",
     "@solana/actions": "^1.2.0",
     "@solana/spl-token": "^0.4.8",
     "@solana/web3.js": "^1.95.1",
