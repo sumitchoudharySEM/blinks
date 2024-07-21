@@ -14,11 +14,21 @@ import {
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
-import { getOrCreateAssociatedTokenAccount, createTransferInstruction, createAssociatedTokenAccountInstruction, createAssociatedTokenAccount, getAssociatedTokenAddress, } from "@solana/spl-token";
-import { Keypair, ParsedAccountData, sendAndConfirmTransaction, } from "@solana/web3.js";
+import {
+  getOrCreateAssociatedTokenAccount,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+  createAssociatedTokenAccount,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
+import {
+  Keypair,
+  ParsedAccountData,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 
-const DESTINATION_WALLET = 'HsSgQw9ZSwhyyZTERen2LYdJteRsBH3gnc69Ux69tEUa'; 
-const MINT_ADDRESS = 'SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa'; 
+const DESTINATION_WALLET = "2n6rwsFfpKs9NZpfEUoYWJ1j1ZzckTqQ1Uqs3kqVPmtd";
+const MINT_ADDRESS = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 const TRANSFER_AMOUNT = 10;
 
 export async function GET(request: Request) {
@@ -62,7 +72,6 @@ export const OPTIONS = GET;
 
 export const POST = async (request: Request) => {
   try {
-
     const url = new URL(request.url);
     const body: ActionPostRequest = await request.json();
 
@@ -73,66 +82,66 @@ export const POST = async (request: Request) => {
       throw "Invalid account";
     }
 
-    let amount : number = 0.1;
+    let amount: number = 0.1;
 
     if (url.searchParams.has("amount")) {
-        try {
-          amount = parseFloat(url.searchParams.get("amount") || "0.1");
-          console.log(amount);
-        } catch (error) {
-          throw "Invalid amount";
-        }
+      try {
+        amount = parseFloat(url.searchParams.get("amount") || "0.1");
+        console.log(amount);
+      } catch (error) {
+        throw "Invalid amount";
+      }
     }
 
     const connection = new Connection(clusterApiUrl("mainnet-beta"));
-    
+
     let senderata = await getAssociatedTokenAddress(
-        new PublicKey(MINT_ADDRESS),
-        account,
-        false
-    )
+      new PublicKey(MINT_ADDRESS),
+      account,
+      false
+    );
     let reciverata = await getAssociatedTokenAddress(
-        new PublicKey(MINT_ADDRESS),
-        new PublicKey(DESTINATION_WALLET),
-        false
-    )
+      new PublicKey(MINT_ADDRESS),
+      new PublicKey(DESTINATION_WALLET),
+      false
+    );
 
-    let senderataacc = connection.getAccountInfo(senderata)
-    let reciverataacc = connection.getAccountInfo(reciverata)
+    let senderataacc = connection.getAccountInfo(senderata);
+    let reciverataacc = connection.getAccountInfo(reciverata);
 
-    // let sourceAccount = await 
+    const transaction = new Transaction();
 
-    // let destinationAccount = await getOrCreateAssociatedTokenAccount(
-    //     connection, 
-    //     account,
-    //     new PublicKey(MINT_ADDRESS),
-    //     new PublicKey(DESTINATION_WALLET)
-    // );
-
-    const transaction = new Transaction().add(
+    if (!senderataacc) {
+        console.log("Creating senderata");
+      transaction.add(
         createAssociatedTokenAccountInstruction(
-            account,
-            new PublicKey(DESTINATION_WALLET),
-            new PublicKey(MINT_ADDRESS),
-            account
-        ),
-        createAssociatedTokenAccountInstruction(
-            account,
-            new PublicKey(account),
-            new PublicKey(MINT_ADDRESS),
-            account
+          account,
+          reciverata,
+          new PublicKey(account),
+          new PublicKey(MINT_ADDRESS)
         ),
         createTransferInstruction(
-            senderata,
-            reciverata,
-            account,
-            TRANSFER_AMOUNT * Math.pow(10, 6)
+          senderata,
+          reciverata,
+          account,
+          amount * Math.pow(10, 6)
         )
-    );
-    
+      );
+    } else {
+      transaction.add(
+        createTransferInstruction(
+          senderata,
+          reciverata,
+          account,
+          amount * Math.pow(10, 6)
+        )
+      );
+    }
+
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
+    
     transaction.feePayer = account;
 
     const payload: ActionPostResponse = await createPostResponse({
