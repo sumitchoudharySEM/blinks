@@ -9,9 +9,7 @@ import {
   clusterApiUrl,
   Connection,
   PublicKey,
-  SystemProgram,
   Transaction,
-  sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import {
   createTransferInstruction,
@@ -20,10 +18,9 @@ import {
 import fs from "fs";
 import path from "path";
 
-const POOL_WALLET = "2n6rwsFfpKs9NZpfEUoYWJ1j1ZzckTqQ1Uqs3kqVPmtd";
 const MINT_ADDRESS = "SENDdRQtYMWaQrBroBrJ2Q53fgVuq95CV9UPGEvpCxa";
 const PARTICIPANTS_FILE = path.join(process.cwd(), 'data', 'participants.json');
-const TRANSFER_AMOUNT = 10;
+const TRANSFER_AMOUNT = 100;
 
 function getParticipants(): string[] {
   if (fs.existsSync(PARTICIPANTS_FILE)) {
@@ -41,15 +38,15 @@ export async function GET(request: Request) {
     let participants = getParticipants();
   const response: ActionGetResponse = {
     icon: "https://i.pinimg.com/originals/dc/ce/27/dcce2718f4eacbd4c021573ed05aa91b.png",
-    description: "Every time you participate, you'll send 10 SEND coins to a random player and have the chance to receive coins from others. It's a fun way to circulate tokens, and potentially grow your SEND holdings. sending joy to others and possibly receiving a surprise return!",
+    description: "Every time you participate, you'll send 100 SEND coins to a random player and have the chance to receive coins from others. It's a fun way to circulate tokens, and potentially grow your SEND holdings. sending joy to others and possibly receiving a surprise return!",
     title:
       `Crypto Karma: SEND Some, Get Some! ${participants.length} Players and Counting...`,
-    label: "SEND 10 & Play!",
+    label: "SEND 100 & Play!",
     links: {
       actions: [
         {
           href: "/api/actions/flip",
-          label: "SEND 10 & Play!",
+          label: "SEND 100 & Play!",
         },
       ],
     },
@@ -115,7 +112,7 @@ export const POST = async (request: Request) => {
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         transaction,
-        message: "You sent 10 'SEND' coins to a random participant",
+        message: "You sent 100 'SEND' coins to a random participant",
       },
     });
 
