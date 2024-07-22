@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     links: {
       actions: [
         {
-          href: "/api/actions/befour?amount={amount}",
+          href: "/api/actions/befourr?amount={amount}",
           label: "Enter the amount",
           parameters: [
             {
