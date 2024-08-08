@@ -73,6 +73,8 @@ export const POST = async (request: Request) => {
 
     // Get current participants and add the new one
     let participants = getParticipants();
+
+    
     if (!participants.includes(account.toBase58())) {
       participants.push(account.toBase58());
       saveParticipants(participants);
