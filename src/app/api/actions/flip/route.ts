@@ -74,18 +74,22 @@ export const POST = async (request: Request) => {
     // Get current participants and add the new one
     let participants = getParticipants();
 
-    
-    if (!participants.includes(account.toBase58())) {
-      participants.push(account.toBase58());
-      saveParticipants(participants);
-    }
-
     // Choose a random recipient (excluding the sender)
     let recipient: PublicKey;
-    do {
-      const randomIndex = Math.floor(Math.random() * participants.length);
-      recipient = new PublicKey(participants[randomIndex]);
-    } while (recipient.equals(account));
+
+    if (participants.includes(account.toBase58())) {
+      let tempParticipants = participants.filter((p) => p !== account.toBase58());
+      const randomIndex = Math.floor(Math.random() * tempParticipants.length);
+      recipient = new PublicKey(tempParticipants[randomIndex]);
+      
+    } else {
+      recipient = new PublicKey(participants[Math.floor(Math.random() * participants.length)]);
+    }
+
+    // do {
+    //   const randomIndex = Math.floor(Math.random() * participants.length);
+    //   recipient = new PublicKey(participants[randomIndex]);
+    // } while (recipient.equals(account));
 
      let senderATA = await getAssociatedTokenAddress(
       new PublicKey(MINT_ADDRESS),
@@ -117,6 +121,11 @@ export const POST = async (request: Request) => {
         message: "You sent 100 'SEND' coins to a random participant",
       },
     });
+
+    if (!participants.includes(account.toBase58())) {
+      participants.push(account.toBase58());
+      saveParticipants(participants);
+    }
 
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
   } catch (error) {
