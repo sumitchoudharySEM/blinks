@@ -36,6 +36,8 @@ function saveParticipants(participants: string[]) {
 
 export async function GET(request: Request) {
     let participants = getParticipants();
+    const requestUrl = new URL(request.url);
+    const baseHref = new URL(`/api/actions`, requestUrl.origin).toString();
   const response: ActionGetResponse = {
     icon: "https://i.pinimg.com/originals/dc/ce/27/dcce2718f4eacbd4c021573ed05aa91b.png",
     description: "Hi, Every time you participate, you'll send 100 SEND coins to a random player and have the chance to receive coins from others. It's a fun way to circulate tokens, and potentially grow your SEND holdings. sending joy to others and possibly receiving a surprise return!",
@@ -45,7 +47,7 @@ export async function GET(request: Request) {
     links: {
       actions: [
         {
-          href: "/api/actions/flip",
+          href: `${baseHref}/flip`,
           label: "SEND 100 & Play!",
         },
       ],
