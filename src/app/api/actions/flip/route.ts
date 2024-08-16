@@ -103,18 +103,38 @@ export const POST = async (request: Request) => {
       false
     );
 
+    // CONSOLE LOG EVERYTHING 
+    console.log("Sender: ", account.toBase58());
+    console.log("Recipient: ", recipient.toBase58());
+    console.log("Sender ATA: ", senderATA.toBase58());
+    console.log("Recipient ATA: ", recipientATA.toBase58());
+
+
     const transaction = new Transaction();
+
+    console.log("blockhash: ", await connection.getLatestBlockhash())
+
+    // CONSOLE LOG EVERYTHING ELSE 
+    console.log("Transaction: ", transaction);
 
     transaction.add(
       createTransferInstruction(senderATA, recipientATA, account, TRANSFER_AMOUNT * Math.pow(10, 6))
     );
+    // CONSOLE LOG EVERYTHING ELSE 
+    console.log("Transaction WITH PARAMETER : ", transaction);
+
+    transaction.feePayer = account;
+     // CONSOLE LOG EVERYTHING ELSE 
+     console.log("Transaction WITH payer : ", transaction);
 
     transaction.recentBlockhash = (
       await connection.getLatestBlockhash()
     ).blockhash;
 
-    transaction.feePayer = account;
+     // CONSOLE LOG EVERYTHING ELSE 
+    console.log("Transaction WITH blockhesh : ", transaction);
 
+    
     const payload: ActionPostResponse = await createPostResponse({
       fields: {
         transaction,
