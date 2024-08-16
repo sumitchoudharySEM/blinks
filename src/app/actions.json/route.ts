@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     return Response.json(response, { headers: ACTIONS_CORS_HEADERS });
 } catch (error) {
     console.error("Error in actions routing:", error);
-    return Response.json({ error: "Internal Server Error" }, { status: 500, headers: ACTIONS_CORS_HEADERS });
+    return Response.json("Internal Server Error hai yahan " , { status: 500, headers: ACTIONS_CORS_HEADERS });
 }
   }
   

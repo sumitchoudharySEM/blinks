@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch (error) {
     console.error("Error parsing request body:", error);
-    return Response.json({ message: "Invalid JSON in request body" }, { status: 400, headers: ACTIONS_CORS_HEADERS });
+    return Response.json("Invalid JSON in request body" , { status: 400, headers: ACTIONS_CORS_HEADERS });
   }
 
   const url = new URL(request.url);
