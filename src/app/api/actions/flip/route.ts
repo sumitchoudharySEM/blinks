@@ -69,87 +69,111 @@ export const POST = async (request: Request) => {
       throw "Invalid account";
     }
 
-    const connection = new Connection(clusterApiUrl("mainnet-beta"));
-
-    // Get current participants and add the new one
-    let participants = getParticipants();
-
-    // Choose a random recipient (excluding the sender)
-    let recipient: PublicKey;
-
-    if (participants.includes(account.toBase58())) {
-      let tempParticipants = participants.filter((p) => p !== account.toBase58());
-      const randomIndex = Math.floor(Math.random() * tempParticipants.length);
-      recipient = new PublicKey(tempParticipants[randomIndex]);
-      
-    } else {
-      recipient = new PublicKey(participants[Math.floor(Math.random() * participants.length)]);
+    let connection;
+    try {
+      connection = new Connection(clusterApiUrl("mainnet-beta"));
+    } catch {
+      throw "Cannot connect to Solana";
     }
 
-    // do {
-    //   const randomIndex = Math.floor(Math.random() * participants.length);
-    //   recipient = new PublicKey(participants[randomIndex]);
-    // } while (recipient.equals(account));
+    let participants;
+    try {
+      participants = getParticipants();
+    } catch (error) {
+      throw "Cannot get participants";
+    }
 
-     let senderATA = await getAssociatedTokenAddress(
-      new PublicKey(MINT_ADDRESS),
-      account,
-      false
-    );
+    let recipient: PublicKey;
+    try {
+      if (participants.includes(account.toBase58())) {
+        let tempParticipants = participants.filter((p) => p !== account.toBase58());
+        const randomIndex = Math.floor(Math.random() * tempParticipants.length);
+        recipient = new PublicKey(tempParticipants[randomIndex]);
+      } else {
+        recipient = new PublicKey(participants[Math.floor(Math.random() * participants.length)]);
+      }
+    } catch (error) {
+      throw "Cannot select recipient";
+    }
 
-    let recipientATA = await getAssociatedTokenAddress(
-      new PublicKey(MINT_ADDRESS),
-      recipient,
-      false
-    );
+    let senderATA, recipientATA;
+    try {
+      senderATA = await getAssociatedTokenAddress(
+        new PublicKey(MINT_ADDRESS),
+        account,
+        false
+      );
+      recipientATA = await getAssociatedTokenAddress(
+        new PublicKey(MINT_ADDRESS),
+        recipient,
+        false
+      );
+    } catch (error) {
+      throw "Cannot get associated token addresses";
+    }
 
-    // CONSOLE LOG EVERYTHING 
     console.log("Sender: ", account.toBase58());
     console.log("Recipient: ", recipient.toBase58());
     console.log("Sender ATA: ", senderATA.toBase58());
     console.log("Recipient ATA: ", recipientATA.toBase58());
 
-
     const transaction = new Transaction();
 
-    console.log("blockhash: ", await connection.getLatestBlockhash())
+    try {
+      console.log("blockhash: ", await connection.getLatestBlockhash());
+    } catch (error) {
+      throw "Cannot get latest blockhash";
+    }
 
-    // CONSOLE LOG EVERYTHING ELSE 
     console.log("Transaction: ", transaction);
 
-    transaction.add(
-      createTransferInstruction(senderATA, recipientATA, account, TRANSFER_AMOUNT * Math.pow(10, 6))
-    );
-    // CONSOLE LOG EVERYTHING ELSE 
+    try {
+      transaction.add(
+        createTransferInstruction(senderATA, recipientATA, account, TRANSFER_AMOUNT * Math.pow(10, 6))
+      );
+    } catch (error) {
+      throw "Cannot create transfer instruction";
+    }
+
     console.log("Transaction WITH PARAMETER : ", transaction);
 
     transaction.feePayer = account;
-     // CONSOLE LOG EVERYTHING ELSE 
-     console.log("Transaction WITH payer : ", transaction);
+    console.log("Transaction WITH payer : ", transaction);
 
-    transaction.recentBlockhash = (
-      await connection.getLatestBlockhash()
-    ).blockhash;
+    try {
+      transaction.recentBlockhash = (
+        await connection.getLatestBlockhash()
+      ).blockhash;
+    } catch (error) {
+      throw "Cannot set recent blockhash";
+    }
 
-     // CONSOLE LOG EVERYTHING ELSE 
-    console.log("Transaction WITH blockhesh : ", transaction);
+    console.log("Transaction WITH blockhash : ", transaction);
 
-    
-    const payload: ActionPostResponse = await createPostResponse({
-      fields: {
-        transaction,
-        message: "You sent 100 'SEND' coins to a random participant",
-      },
-    });
+    let payload: ActionPostResponse;
+    try {
+      payload = await createPostResponse({
+        fields: {
+          transaction,
+          message: "You sent 100 'SEND' coins to a random participant",
+        },
+      });
+    } catch (error) {
+      throw "Cannot create post response";
+    }
 
-    if (!participants.includes(account.toBase58())) {
-      participants.push(account.toBase58());
-      saveParticipants(participants);
+    try {
+      if (!participants.includes(account.toBase58())) {
+        participants.push(account.toBase58());
+        saveParticipants(participants);
+      }
+    } catch (error) {
+      throw "Cannot update participants list";
     }
 
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
   } catch (error) {
-    let message = "an unknown error";
+    let message = "An unknown error occurred";
     if (typeof error == "string") {
       message = error;
     }
