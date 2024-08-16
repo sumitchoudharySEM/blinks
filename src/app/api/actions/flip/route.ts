@@ -60,7 +60,15 @@ export const OPTIONS = GET;
 export const POST = async (request: Request) => {
   // try {
     
-    const body: ActionPostRequest = await request.json();
+    // const body: ActionPostRequest = await request.json();
+    let body: ActionPostRequest;
+    try {
+      body = await request.json();
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return Response.json({ message: "Invalid JSON in request body" }, { status: 400, headers: ACTIONS_CORS_HEADERS });
+    }
+
     const url = new URL(request.url);
 
     let account: PublicKey;
@@ -172,7 +180,11 @@ export const POST = async (request: Request) => {
       throw "Cannot update participants list";
     }
 
+    try {
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
+  } catch {
+    throw "Error in last"
+  }
   // } catch (error) {
   //   let message = "An unknown error occurred";
   //   if (typeof error == "string") {

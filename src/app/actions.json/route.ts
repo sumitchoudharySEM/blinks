@@ -5,7 +5,7 @@ export async function GET(request: Request) {
         rules: [
             {
                 pathPattern: "/",
-                apiPath: "/api/actions/donate",
+                apiPath: "/api/actions/flip",
             },
         ]
     };
