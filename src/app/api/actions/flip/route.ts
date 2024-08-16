@@ -57,139 +57,129 @@ export async function GET(request: Request) {
 
 export const OPTIONS = GET;
 
-export const POST = async (request: Request) => {
-  // try {
-    
-    // const body: ActionPostRequest = await request.json();
-    let body: ActionPostRequest;
-    try {
-      body = await request.json();
-    } catch (error) {
-      console.error("Error parsing request body:", error);
-      return Response.json({ message: "Invalid JSON in request body" }, { status: 400, headers: ACTIONS_CORS_HEADERS });
+export async function POST(request: Request) {
+  let body: ActionPostRequest;
+  try {
+    body = await request.json();
+  } catch (error) {
+    console.error("Error parsing request body:", error);
+    return Response.json({ message: "Invalid JSON in request body" }, { status: 400, headers: ACTIONS_CORS_HEADERS });
+  }
+
+  const url = new URL(request.url);
+
+  let account: PublicKey;
+  try {
+    account = new PublicKey(body.account);
+  } catch (error) {
+    return Response.json("Invalid account", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  let connection;
+  try {
+    connection = new Connection(clusterApiUrl("mainnet-beta"));
+  } catch {
+    return Response.json("Cannot connect to Solana", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  let participants;
+  try {
+    participants = getParticipants();
+  } catch (error) {
+    return Response.json("Cannot get participants", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  let recipient: PublicKey;
+  try {
+    if (participants.includes(account.toBase58())) {
+      let tempParticipants = participants.filter((p) => p !== account.toBase58());
+      const randomIndex = Math.floor(Math.random() * tempParticipants.length);
+      recipient = new PublicKey(tempParticipants[randomIndex]);
+    } else {
+      recipient = new PublicKey(participants[Math.floor(Math.random() * participants.length)]);
     }
+  } catch (error) {
+    return Response.json("Cannot select recipient", { headers: ACTIONS_CORS_HEADERS });
+  }
 
-    const url = new URL(request.url);
+  let senderATA, recipientATA;
+  try {
+    senderATA = await getAssociatedTokenAddress(
+      new PublicKey(MINT_ADDRESS),
+      account,
+      false
+    );
+    recipientATA = await getAssociatedTokenAddress(
+      new PublicKey(MINT_ADDRESS),
+      recipient,
+      false
+    );
+  } catch (error) {
+    return Response.json("Cannot get associated token addresses", { headers: ACTIONS_CORS_HEADERS });
+  }
 
-    let account: PublicKey;
-    try {
-      account = new PublicKey(body.account);
-    } catch (error) {
-      throw "Invalid account";
+  console.log("Sender: ", account.toBase58());
+  console.log("Recipient: ", recipient.toBase58());
+  console.log("Sender ATA: ", senderATA.toBase58());
+  console.log("Recipient ATA: ", recipientATA.toBase58());
+
+  const transaction = new Transaction();
+
+  try {
+    console.log("blockhash: ", await connection.getLatestBlockhash());
+  } catch (error) {
+    return Response.json("Cannot get latest blockhash", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  console.log("Transaction: ", transaction);
+
+  try {
+    transaction.add(
+      createTransferInstruction(senderATA, recipientATA, account, TRANSFER_AMOUNT * Math.pow(10, 6))
+    );
+  } catch (error) {
+    return Response.json("Cannot create transfer instruction", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  console.log("Transaction WITH PARAMETER : ", transaction);
+
+  transaction.feePayer = account;
+  console.log("Transaction WITH payer : ", transaction);
+
+  try {
+    transaction.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
+  } catch (error) {
+    return Response.json("Cannot set recent blockhash", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  console.log("Transaction WITH blockhash : ", transaction);
+
+  let payload: ActionPostResponse;
+  try {
+    payload = await createPostResponse({
+      fields: {
+        transaction,
+        message: "You sent 100 'SEND' coins to a random participant",
+      },
+    });
+  } catch (error) {
+    return Response.json("Cannot create post response", { headers: ACTIONS_CORS_HEADERS });
+  }
+
+  try {
+    if (!participants.includes(account.toBase58())) {
+      participants.push(account.toBase58());
+      saveParticipants(participants);
     }
+  } catch (error) {
+    return Response.json("Cannot update participants list", { headers: ACTIONS_CORS_HEADERS });
+  }
 
-    let connection;
-    try {
-      connection = new Connection(clusterApiUrl("mainnet-beta"));
-    } catch {
-      throw "Cannot connect to Solana";
-    }
-
-    let participants;
-    try {
-      participants = getParticipants();
-    } catch (error) {
-      throw "Cannot get participants";
-    }
-
-    let recipient: PublicKey;
-    try {
-      if (participants.includes(account.toBase58())) {
-        let tempParticipants = participants.filter((p) => p !== account.toBase58());
-        const randomIndex = Math.floor(Math.random() * tempParticipants.length);
-        recipient = new PublicKey(tempParticipants[randomIndex]);
-      } else {
-        recipient = new PublicKey(participants[Math.floor(Math.random() * participants.length)]);
-      }
-    } catch (error) {
-      throw "Cannot select recipient";
-    }
-
-    let senderATA, recipientATA;
-    try {
-      senderATA = await getAssociatedTokenAddress(
-        new PublicKey(MINT_ADDRESS),
-        account,
-        false
-      );
-      recipientATA = await getAssociatedTokenAddress(
-        new PublicKey(MINT_ADDRESS),
-        recipient,
-        false
-      );
-    } catch (error) {
-      throw "Cannot get associated token addresses";
-    }
-
-    console.log("Sender: ", account.toBase58());
-    console.log("Recipient: ", recipient.toBase58());
-    console.log("Sender ATA: ", senderATA.toBase58());
-    console.log("Recipient ATA: ", recipientATA.toBase58());
-
-    const transaction = new Transaction();
-
-    try {
-      console.log("blockhash: ", await connection.getLatestBlockhash());
-    } catch (error) {
-      throw "Cannot get latest blockhash";
-    }
-
-    console.log("Transaction: ", transaction);
-
-    try {
-      transaction.add(
-        createTransferInstruction(senderATA, recipientATA, account, TRANSFER_AMOUNT * Math.pow(10, 6))
-      );
-    } catch (error) {
-      throw "Cannot create transfer instruction";
-    }
-
-    console.log("Transaction WITH PARAMETER : ", transaction);
-
-    transaction.feePayer = account;
-    console.log("Transaction WITH payer : ", transaction);
-
-    try {
-      transaction.recentBlockhash = (
-        await connection.getLatestBlockhash()
-      ).blockhash;
-    } catch (error) {
-      throw "Cannot set recent blockhash";
-    }
-
-    console.log("Transaction WITH blockhash : ", transaction);
-
-    let payload: ActionPostResponse;
-    try {
-      payload = await createPostResponse({
-        fields: {
-          transaction,
-          message: "You sent 100 'SEND' coins to a random participant",
-        },
-      });
-    } catch (error) {
-      throw "Cannot create post response";
-    }
-
-    try {
-      if (!participants.includes(account.toBase58())) {
-        participants.push(account.toBase58());
-        saveParticipants(participants);
-      }
-    } catch (error) {
-      throw "Cannot update participants list";
-    }
-
-    try {
+  try {
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
   } catch {
-    throw "Error in last"
+    return Response.json("Error in last", { headers: ACTIONS_CORS_HEADERS });
   }
-  // } catch (error) {
-  //   let message = "An unknown error occurred";
-  //   if (typeof error == "string") {
-  //     message = error;
-  //   }
-  //   return Response.json({ message }, { headers: ACTIONS_CORS_HEADERS });
-  // }
 };
