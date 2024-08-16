@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 export const OPTIONS = GET;
 
 export const POST = async (request: Request) => {
-  try {
+  // try {
     const body: ActionPostRequest = await request.json();
     const url = new URL(request.url);
 
@@ -172,11 +172,11 @@ export const POST = async (request: Request) => {
     }
 
     return Response.json(payload, { headers: ACTIONS_CORS_HEADERS });
-  } catch (error) {
-    let message = "An unknown error occurred";
-    if (typeof error == "string") {
-      message = error;
-    }
-    return Response.json({ message }, { headers: ACTIONS_CORS_HEADERS });
-  }
+  // } catch (error) {
+  //   let message = "An unknown error occurred";
+  //   if (typeof error == "string") {
+  //     message = error;
+  //   }
+  //   return Response.json({ message }, { headers: ACTIONS_CORS_HEADERS });
+  // }
 };
