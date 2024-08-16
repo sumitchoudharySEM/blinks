@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     let participants = getParticipants();
   const response: ActionGetResponse = {
     icon: "https://i.pinimg.com/originals/dc/ce/27/dcce2718f4eacbd4c021573ed05aa91b.png",
-    description: "Every time you participate, you'll send 100 SEND coins to a random player and have the chance to receive coins from others. It's a fun way to circulate tokens, and potentially grow your SEND holdings. sending joy to others and possibly receiving a surprise return!",
+    description: "Hi, Every time you participate, you'll send 100 SEND coins to a random player and have the chance to receive coins from others. It's a fun way to circulate tokens, and potentially grow your SEND holdings. sending joy to others and possibly receiving a surprise return!",
     title:
       `Crypto Karma: SEND Some, Get Some! ${participants.length} Players and Counting...`,
     label: "SEND 100 & Play!",
@@ -59,6 +59,7 @@ export const OPTIONS = GET;
 
 export const POST = async (request: Request) => {
   // try {
+    
     const body: ActionPostRequest = await request.json();
     const url = new URL(request.url);
 
